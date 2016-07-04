@@ -3,11 +3,11 @@
 ### helper stuff ######
 require(dplyr)
 require(likert)
-likert.style<-theme_bw(base_size = 16)+theme(legend.position="bottom",legend.title=element_blank())
+likert.style<-theme_bw(base_size = 14)+theme(legend.position="bottom",legend.title=element_blank())
 
 surveyDataFactorCleaner <-function(data.frame){
   for(i in seq_along(data.frame)){
-    if(nlevels(data.frame[[i]])==10){
+    if(nlevels(data.frame[[i]])>8){
       levels(data.frame[[i]])<-list(never="never",rarely="rarely","a few times a month"=c("aftmonth","a few times a month"),weekly="weekly","a few times a week"=c("aftweek","a few times a week"),daily="daily","multiple times per day"=c("multipleday","multiple times per day"))
     }else if(nlevels(data.frame[[i]])==7){
       levels(data.frame[[i]])<-list("strongly disagree"=c("strdisag","strongly disagree"),"disagree"="disagree",neutral="neutral",agree="agree","strongly agree"=c("stragree","strongly agree"))
@@ -19,6 +19,26 @@ surveyDataFactorCleaner <-function(data.frame){
   }
   return(data.frame)
 }
+
+#Helper Function for building a Summary Table to plot with tableGrob
+summaryTable<-function(data){
+  #names<-c("Min.","1st Quantile","Median","Mean","3rd Quantile","Max.","SD")
+  #values<-c(min(data),quantile(data,0.25),median(data),mean(data),quantile(data,0.75),max(data),sd(data))
+  #summary<-data.frame(names,values)
+  summary<-data.frame()  
+  values<-c(min(data,na.rm=TRUE),quantile(data,0.25,na.rm=TRUE),median(data,na.rm=TRUE),mean(data,na.rm=TRUE),quantile(data,0.75,na.rm=TRUE),max(data,na.rm=TRUE),sd(data,na.rm=TRUE))
+  values<-round(values,2)
+  summary<-rbind(summary,values)
+  colnames(summary)<-c("Min.","1st Qu.","Median","Mean","3rd Qu.","Max.","SD")
+  return(summary)
+}
+
+# Theme for Tables in Plots 
+mytheme <- gridExtra::ttheme_default(
+  core = list(fg_params=list(cex = 1.5)),
+  colhead = list(fg_params=list(cex = 1.0)),
+  rowhead = list(fg_params=list(cex = 1.0))
+)
 
 ######################
 
@@ -44,8 +64,7 @@ refinding<-refinding%>%select(-c(X4refind_exampleTweet,X4refind_reasons,X4refind
 rating <-survey_data%>%select(X5sum_preservingopt:X5sum_refind_frust,X4refind_difficulty)
 rating<-surveyDataFactorCleaner(rating)
 
-str(survey_data$X5sum_preservingopt)
-str(rating$X5sum_preservingopt)
+
 
 # preserving likert plot 
 preserving<-surveyDataFactorCleaner(preserving)
@@ -61,18 +80,6 @@ refinding <- refinding%>%select(X4refind_searchtimeline:X4refind_lookstore)
 refinding<-plyr::rename(refinding,c("X4refind_searchtimeline"="RefindingStrategy:OwnTimeline","X4refind_searchfavlist"="RefindingStrategy:FavouritesList","X4refind_searchtimeline_person"="RefindingStrategy:UserProfile","X4refind_query"="RefindingStrategy:TwitterSearch","X4refind_searchengine"="RefindingStrategy:SearchEngine","Xrefind_lookstore"="RefindingStrategy:ExternalStore"))
 refinding.plot<-likert(refinding)
 likert.bar.plot(refinding.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style 
-
-############
-##  Korrelation preserving <-> refinding 
-###########
-# User who frequently preserv also frequently refind?
-preserv.refind.freq<-survey_data%>%select(X3preserv_freq,X4refind_freq)
-preserv.refind.freq<-surveyDataFactorCleaner(preserv.refind.freq)
-preserv.refind.freq$X3preserv_freq<-as.numeric(preserv.refind.freq$X3preserv_freq)
-preserv.refind.freq$X4refind_freq<-as.numeric(preserv.refind.freq$X4refind_freq)
-#Spearman Rho for Correlation with ordinal data
-cor(preserv.refind.freq,use="complete.obs",method="spearman")
-#r=0.46  relativ starke Beziehung zwischen Aufbewahren und Wiederfinden
 
 
 ###############
@@ -101,7 +108,7 @@ refinding.difficulty.relation <-bind_cols(refinding,rating)
 #make difficulty numeric
 refinding.difficulty.relation$X4refind_difficulty<-as.numeric(refinding.difficulty.relation$X4refind_difficulty)
 #re-code difficulty level 
-refinding.difficulty.relation<-refinding.difficulty.relation%>%mutate(rf.difficult=ifelse(X4refind_difficulty<4,"yes","no"))
+refinding.difficulty.relation<-refinding.difficulty.relation%>%mutate(rf.difficult=ifelse(X4refind_difficulty<4,"hard","easy"))
 refinding.difficulty.relation<-refinding.difficulty.relation%>%select(-(X5sum_preservingopt:X4refind_difficulty))
 
 #refinding.difficulty.relation%>%group_by(rf.difficult)%>%summarise(count=n())
@@ -113,6 +120,7 @@ refinding.difficulty.relation<-refinding.difficulty.relation%>%select(-rf.diffic
 
 #### Plot the stuff 
 refinding.difficulty.relation.plot<-likert(refinding.difficulty.relation,grouping=diff.freq.group)
+plot(refinding.difficulty.relation.plot)
 likert.bar.plot(refinding.difficulty.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style 
 
 #########################
@@ -122,7 +130,7 @@ refinding.frustration.relation <-bind_cols(refinding,rating)
 #make frustration numeric
 refinding.frustration.relation$X5sum_refind_frust<-as.numeric(refinding.frustration.relation$X5sum_refind_frust)  
 #re-code frustration level 
-refinding.frustration.relation<-refinding.frustration.relation%>%mutate(rf.frust=ifelse(X5sum_refind_frust<4,"no","yes"))
+refinding.frustration.relation<-refinding.frustration.relation%>%mutate(rf.frust=ifelse(X5sum_refind_frust<4,"never/rarley","occasionaly"))
 refinding.frustration.relation<-refinding.frustration.relation%>%select(-(X5sum_preservingopt:X4refind_difficulty))
 
 #refinding.frustration.relation%>%group_by(rf.frust)%>%summarise(count=n())
@@ -143,4 +151,51 @@ likert.bar.plot(refinding.frustration.relation.plot,low.color = "#E69F00",high.c
 preserving.option.relation<-bind_cols(preserving,rating)
 #make frustration numeric
 preserving.option.relation$X5sum_preservingopt<-as.numeric(preserving.option.relation$X5sum_preservingopt)
+#recode People say good/bad preserving options
+preserving.option.relation<-preserving.option.relation%>%mutate(preserve.opt=ifelse(X5sum_preservingopt<4,"poor options","good options"))
+preserving.option.relation<-preserving.option.relation%>%select(-(X5sum_preservingopt:X4refind_difficulty))
+
+#preserving.option.relation%>%group_by(preserve.opt)%>%summarise(count=n())
+
+preserving.option.relation$preserve.opt<-as.factor(preserving.option.relation$preserve.opt)
+preserving.option.relation<-preserving.option.relation[complete.cases(preserving.option.relation),]
+
+preserveopt.freq.group<-preserving.option.relation$preserve.opt
+preserving.option.relation<-preserving.option.relation%>%select(-preserve.opt)
+preserving.option.relation.plot<-likert(preserving.option.relation,grouping = preserveopt.freq.group)
+
+likert.bar.plot(preserving.option.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style 
+
+
+###############################################
+####  Korrelation of a lot of stuff 
+###############################################
+
+# User who frequently preserv also frequently refind?
+preserv.refind.freq<-survey_data%>%select(X3preserv_freq,X4refind_freq,X4refind_freqown)
+preserv.refind.freq<-surveyDataFactorCleaner(preserv.refind.freq)
+preserv.refind.freq.corr<-as.data.frame(lapply(preserv.refind.freq,as.numeric))
+
+# The numerics of Rating Columsn
+rating.corr <- as.data.frame(lapply(rating,as.numeric))
+# bind the two data frames 
+corr.plot<-bind_cols(preserv.refind.freq.corr,rating.corr)
+corr.plot<-plyr::rename(corr.plot,c("X3preserv_freq"="Preserve\nFrequency","X4refind_freq"="Refinding\nFrequency","X4refind_freqown"="Re-finding\nFrequency\nOwn Tweets","X5sum_preservingopt"="Rating\nPreserve\nOptions","X5sum_refindingopt"="Rating\nRe-finding\nOptions","X5sum_refind_frust"="Re-finding\nFrustration","X4refind_difficulty"="Re-finding\nSimplicity"))
+cor.object<-cor(corr.plot,use="complete.obs",method="spearman")
+
+corr.color<-colorRampPalette(c("#E69F00","grey","#56B4E9"))
+corrplot.mixed(cor.object,lower="circle",upper="number",col=corr.color(10),tl.col="black")
+
+#corrplot(cor.object,type="upper",method = "number",col = corr.color(10),)
+
+
+##############################################
+############ Preserve Frequency
+
+plot<-ggplot(preserv.refind.freq.corr,aes(y=X4refind_freq,x=factor(0)))+geom_boxplot(outlier.size = 3)+xlab("")+ylab("Preserve Frequency")+coord_flip()+theme_set(theme_grey(base_size = 21))
+table<-tableGrob(summaryTable(preserv.refind.freq.corr$X4refind_freq),rows=NULL,theme=mytheme)
+grid.arrange(plot,table,heights=c(1,0.5))
+
+testi<-preserv.refind.freq.corr%>%group_by(X4refind_freq)%>%summarise(count=n())
+
 
