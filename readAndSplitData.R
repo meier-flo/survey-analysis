@@ -42,7 +42,7 @@ mytheme <- gridExtra::ttheme_default(
   rowhead = list(fg_params=list(cex = 1.0))
 )
 ######
-# Plot Pics in res  830 x 400
+#Plot Pics in res  830 x 400
 #Plot pics with groups 830x 600
 ######################
 
@@ -74,16 +74,18 @@ rating<-surveyDataFactorCleaner(rating)
 preserving<-surveyDataFactorCleaner(preserving)
 preserving<-preserving%>%select(-X3preserv_freq)
 preserving<-plyr::rename(preserving,c("X3preserv_fav"="Favourite","X3preserv_retweet"="Retweet","X3preserv_addstore"="Use Separate Store","X3preserv_notreat"="No Special Action"))
+#preserving<-preserving[complete.cases(preserving),]
 preserving.plot<-likert(preserving)
-likert.bar.plot(preserving.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("When you want to preserve a Tweet for later, do you ...")
+likert.bar.plot(preserving.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("When you want to preserve a Tweet for later, do you ...\n (n=",nrow(preserving),")"))
 
 
 # refinding likert plot
 refinding <-refinding%>%select(X4refind_searchtimeline:X4refind_lookstore)
 refinding<-surveyDataFactorCleaner(refinding)
 refinding<-plyr::rename(refinding,c("X4refind_searchtimeline"="Scan Own Timeline","X4refind_searchfavlist"="Scan Favourites List","X4refind_searchtimeline_person"="Scan Sender Profile","X4refind_query"="Use Twitter Search","X4refind_searchengine"="Use Search Engine","X4refind_lookstore"="Scan External Store"))
+#refinding<-refinding[complete.cases(refinding),]
 refinding.plot<-likert(refinding)
-likert.bar.plot(refinding.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("When you want to find a Tweet again, do you ...")
+likert.bar.plot(refinding.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("When you want to find a Tweet again, do you ...\n(n=",nrow(refinding),")"))
 
 
 ###############
@@ -101,9 +103,11 @@ refinding.preserv.relation<-refinding.preserv.relation[complete.cases(refinding.
 freq.group<-refinding.preserv.relation$preserv.freq
 refinding.preserv.relation<-refinding.preserv.relation%>%select(-preserv.freq)
 
+freq.group.table<-table(freq.group)
+
 #### Plot that stuff
 refinding.preserv.relation.plot<-likert(refinding.preserv.relation,grouping = freq.group) 
-likert.bar.plot(refinding.preserv.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("Re-finding Strategies grouped by Preserve Frequency") 
+likert.bar.plot(refinding.preserv.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("Re-finding Strategies Grouped by Preserve Frequency\n(at least rarely: n=",freq.group.table[1]," | never: n=",freq.group.table[2],")")) 
 
 ######################
 #### Haben Nutzer die sagen wiederfinden ist einfach andere Strategien als Nutzer die sagen Wiederfinden ist schwer 
@@ -123,9 +127,11 @@ refinding.difficulty.relation<-refinding.difficulty.relation[complete.cases(refi
 diff.freq.group<-refinding.difficulty.relation$rf.difficult
 refinding.difficulty.relation<-refinding.difficulty.relation%>%select(-rf.difficult)
 
+diff.freq.group.table<-table(diff.freq.group)
+
 #### Plot the stuff 
 refinding.difficulty.relation.plot<-likert(refinding.difficulty.relation,grouping=diff.freq.group)
-likert.bar.plot(refinding.difficulty.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("Re-finding Strategies grouped by Re-finding Rating") 
+likert.bar.plot(refinding.difficulty.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("Re-finding Strategies Grouped by Re-finding Difficulty\n(easy: n=",diff.freq.group.table[1]," | hard: n=",diff.freq.group.table[2],")")) 
 
 #########################
 ##### Nutzer die sagen sie waren noch nie oder seltenfrustriert andere RF-Strategien?
@@ -145,9 +151,11 @@ refinding.frustration.relation<-refinding.frustration.relation[complete.cases(re
 frust.freq.group<-refinding.frustration.relation$rf.frust
 refinding.frustration.relation<-refinding.frustration.relation%>%select(-rf.frust)
 
+frust.freq.group.table<-table(frust.freq.group)
+
 #### Plot that stuff 
 refinding.frustration.relation.plot<-likert(refinding.frustration.relation,grouping=frust.freq.group)
-likert.bar.plot(refinding.frustration.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("Re-finding Strategies grouped by Frustration Experience") 
+likert.bar.plot(refinding.frustration.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("Re-finding Strategies Grouped by Frustration Experience\n(at least rarely: n=",frust.freq.group.table[1]," | never: n=",frust.freq.group.table[2],")")) 
 
 ######################################
 ########### Nutzer die sagen die Aufbewahrensfunktionen sind gut - welche Nutzen die ?
@@ -156,7 +164,7 @@ preserving.option.relation<-bind_cols(preserving,rating)
 #make frustration numeric
 preserving.option.relation$X5sum_preservingopt<-as.numeric(preserving.option.relation$X5sum_preservingopt)
 #recode People say good/bad preserving options
-preserving.option.relation<-preserving.option.relation%>%mutate(preserve.opt=ifelse(X5sum_preservingopt<4,"poor options","good options"))
+preserving.option.relation<-preserving.option.relation%>%mutate(preserve.opt=ifelse(X5sum_preservingopt<4,"not satisfied","satisfied"))
 preserving.option.relation<-preserving.option.relation%>%select(-(X5sum_preservingopt:X4refind_difficulty))
 
 #preserving.option.relation%>%group_by(preserve.opt)%>%summarise(count=n())
@@ -167,9 +175,11 @@ preserving.option.relation<-preserving.option.relation[complete.cases(preserving
 preserveopt.freq.group<-preserving.option.relation$preserve.opt
 preserving.option.relation<-preserving.option.relation%>%select(-preserve.opt)
 
+preserveopt.freq.group.table<-table(preserveopt.freq.group)
+
 ###### Plot that stuff 
 preserving.option.relation.plot<-likert(preserving.option.relation,grouping = preserveopt.freq.group)
-likert.bar.plot(preserving.option.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("Preserve Strategies grouped by Preserve Options Rating") 
+likert.bar.plot(preserving.option.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("Preserve Strategies Grouped by Preserve Options Satisfaction \n(not satisfied: n=",preserveopt.freq.group.table[1]," | satisfied: n=",preserveopt.freq.group.table[2],")"))
 
 ###################################################
 ############### Nutzer die sagen re-finding optionen sind gut, welche Nutzen die ?
@@ -178,7 +188,7 @@ refinding.option.relation<-bind_cols(refinding,rating)
 refinding.option.relation$X5sum_refindingopt<-as.numeric(refinding.option.relation$X5sum_refindingopt)
 
 # recode people say bad re-finding options good re-finding options 
-refinding.option.relation<-refinding.option.relation%>%mutate(rf.option=ifelse(X5sum_refindingopt<4,"poor options","good options"))
+refinding.option.relation<-refinding.option.relation%>%mutate(rf.option=ifelse(X5sum_refindingopt<4,"not satisfied","satisfied"))
 # drop the other columns
 refinding.option.relation<-refinding.option.relation%>%select(-(X5sum_preservingopt:X4refind_difficulty))
 # turn it into factor 
@@ -188,9 +198,11 @@ refinding.option.relation<-refinding.option.relation[complete.cases(refinding.op
 refinding.opt.group<-refinding.option.relation$rf.option
 refinding.option.relation<-refinding.option.relation%>%select(-rf.option)
 
+refinding.opt.group.table<-table(refinding.opt.group)
+
 ##### Plot that stuff
 refinding.option.relation.plot<-likert(refinding.option.relation,grouping = refinding.opt.group)
-likert.bar.plot(refinding.option.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle("Re-finding Strategies grouped by Re-finding Options Rating") 
+likert.bar.plot(refinding.option.relation.plot,low.color = "#E69F00",high.color = "#56B4E9",text.size = rel(3.5))+likert.style+ggtitle(paste0("Re-finding Strategies Grouped by Re-finding Options Satisfaction \n(not satisfied: n=",refinding.opt.group.table[1]," | satisfied: n=",refinding.opt.group.table[2],")")) 
 
 
 ###############################################
@@ -206,7 +218,7 @@ preserv.refind.freq.corr<-as.data.frame(lapply(preserv.refind.freq,as.numeric))
 rating.corr <- as.data.frame(lapply(rating,as.numeric))
 # bind the two data frames 
 corr.plot<-bind_cols(preserv.refind.freq.corr,rating.corr)
-corr.plot<-plyr::rename(corr.plot,c("X3preserv_freq"="Preserve\nFrequency","X4refind_freq"="Refinding\nFrequency","X4refind_freqown"="Re-finding\nFrequency\nOwn Tweets","X5sum_preservingopt"="Rating\nPreserve\nOptions","X5sum_refindingopt"="Rating\nRe-finding\nOptions","X5sum_refind_frust"="Re-finding\nFrustration","X4refind_difficulty"="Re-finding\nSimplicity"))
+corr.plot<-plyr::rename(corr.plot,c("X3preserv_freq"="Preserve\nFrequency","X4refind_freq"="Refinding\nFrequency","X4refind_freqown"="Re-finding\nFrequency\nOwn Tweets","X5sum_preservingopt"="Preserve\nOptions\nSatisfaction","X5sum_refindingopt"="Re-finding\nOptions\nSatisfaction","X5sum_refind_frust"="Re-finding\nFrustration","X4refind_difficulty"="Re-finding\nDifficulty"))
 
 #### Plot that stuff 
 cor.object<-cor(corr.plot,use="complete.obs",method="spearman")
